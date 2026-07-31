@@ -1,0 +1,64 @@
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh; 
+  position: relative;
+  background-color: #0046B5;
+  background-image: url("Design sem nome.jpg");
+  
+
+  background-size: cover;       
+  background-position: center 100%;  
+  background-repeat: no-repeat; 
+  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 100%;
+  left: 100;
+  width: 150%;
+  height: 150%;
+  background-image: url("Design sem nome.jpg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  
+  opacity: 0.9; 
+  
+  z-index: -1;
+  pointer-events: none; 
+
+clip-path: inset(0 100px 0 0);
+}
+
+#objeto1{
+    position:absolute;
+    top: 250px;
+    left: 1250px;
+    width: 10px;
+}
+
+#objeto2{
+    position:absolute;
+    top: 450px;
+    left: 1210px;
+}
+
+
+#objeto3{
+    position:absolute;
+    top: 190px;
+    left: 1495px;
+} 
+
+#fotinho{
+    position:absolute;
+    top: -320px;
+    left: 690px;
+    scale: 0.3
+} 

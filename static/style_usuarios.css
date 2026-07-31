@@ -1,0 +1,449 @@
+/* =====================================
+   STYLE USUÁRIOS
+   ALMOX SENAI PR
+===================================== */
+
+
+
+/* ==========================
+   FUNDO GERAL
+========================== */
+
+
+body{
+
+    background:#f4f6f9;
+
+    font-family:Arial, Helvetica, sans-serif;
+
+}
+
+
+
+
+
+
+/* ==========================
+   NAVBAR
+========================== */
+
+
+.navbar{
+
+
+    background:#192A6B !important;
+
+
+    height:55px;
+
+
+    padding:0 !important;
+
+
+}
+
+
+
+
+
+.navbar-brand{
+
+
+    color:white !important;
+
+
+    font-weight:bold;
+
+
+}
+
+
+
+
+
+
+.nav-link{
+
+
+    color:white !important;
+
+
+    font-weight:500;
+
+
+    line-height:55px;
+
+
+    transition:.3s;
+
+
+}
+
+
+
+
+
+.nav-link:hover{
+
+
+    color:#F99203 !important;
+
+
+}
+
+
+
+
+
+
+
+/* ==========================
+   TITULO
+========================== */
+
+
+.titulo{
+
+
+    background:#192A6B;
+
+
+    color:white;
+
+
+    text-align:center;
+
+
+    padding:18px;
+
+
+    border-radius:10px 10px 0 0;
+
+
+    font-size:30px;
+
+
+    font-weight:bold;
+
+
+}
+
+
+
+
+
+
+
+
+/* ==========================
+   CARDS
+========================== */
+
+
+.card{
+
+
+    border:none;
+
+
+    border-radius:12px;
+
+
+    box-shadow:0px 5px 15px rgba(0,0,0,.15);
+
+
+}
+
+
+
+
+
+
+
+/* ==========================
+   FORMULÁRIO
+========================== */
+
+
+form label{
+
+
+    font-weight:600;
+
+
+    margin-bottom:5px;
+
+
+}
+
+
+
+
+
+
+.form-control,
+.form-select{
+
+
+    border-radius:8px;
+
+
+    border:1px solid #ddd;
+
+
+    height:45px;
+
+
+}
+
+
+
+
+
+
+.form-control:focus,
+.form-select:focus{
+
+
+    border-color:#F99203;
+
+
+    box-shadow:0 0 6px rgba(249,146,3,.4);
+
+
+}
+
+
+
+
+
+
+
+/* ==========================
+   BOTÃO CADASTRAR
+========================== */
+
+
+.btn-principal{
+
+
+    background:#192A6B;
+
+
+    color:white;
+
+
+    border:none;
+
+
+    border-radius:8px;
+
+
+    padding:10px 25px;
+
+
+    font-weight:bold;
+
+
+    transition:.3s;
+
+
+}
+
+
+
+
+.btn-principal:hover{
+
+
+    background:#F99203;
+
+
+    color:white;
+
+
+}
+
+
+
+
+
+
+
+/* ==========================
+   TABELA
+========================== */
+
+
+.table{
+
+
+    background:white;
+
+
+}
+
+
+
+
+.table thead{
+
+
+    background:#192A6B !important;
+
+
+    color:white;
+
+
+}
+
+
+
+
+
+.table th,
+.table td{
+
+
+    text-align:center;
+
+
+    vertical-align:middle;
+
+
+}
+
+
+
+
+
+.table-hover tbody tr:hover{
+
+
+    background:#eeeeee;
+
+
+}
+
+
+
+
+
+
+
+
+/* ==========================
+   BOTÃO EXCLUIR
+========================== */
+
+
+.btn-excluir{
+
+
+    background:#dc3545;
+
+
+    color:white;
+
+
+    border:none;
+
+
+    border-radius:8px;
+
+
+    padding:6px 15px;
+
+
+    transition:.3s;
+
+
+}
+
+
+
+
+
+.btn-excluir:hover{
+
+
+    background:#a71d2a;
+
+
+    color:white;
+
+
+}
+
+
+
+
+
+
+
+
+/* ==========================
+   BADGES / PERMISSÃO
+========================== */
+
+
+.badge{
+
+
+    padding:7px 12px;
+
+
+    border-radius:20px;
+
+
+    font-size:14px;
+
+
+}
+
+
+
+
+
+
+
+/* ==========================
+   RESPONSIVO
+========================== */
+
+
+@media(max-width:768px){
+
+
+
+.titulo{
+
+
+    font-size:22px;
+
+
+}
+
+
+
+.nav-link{
+
+
+    line-height:normal;
+
+
+}
+
+
+
+.table{
+
+
+    font-size:14px;
+
+
+}
+
+
+
+}

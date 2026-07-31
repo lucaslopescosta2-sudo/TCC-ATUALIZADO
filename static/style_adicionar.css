@@ -1,0 +1,66 @@
+/* Fundo geral da página */
+body{
+    background:#f4f6f9;
+    font-family: Arial, sans-serif;
+}
+
+/* Card principal */
+.card{
+    border-radius:12px;
+    overflow:hidden;
+}
+
+/* Cabeçalho do card */
+.card-header{
+    font-weight:bold;
+    letter-spacing:.5px;
+}
+
+/* Inputs e selects */
+.form-control,
+.form-select{
+    border-radius:8px;
+    border:1px solid #ddd;
+}
+
+/* Efeito ao clicar no input */
+.form-control:focus,
+.form-select:focus{
+    border-color:#F99203;
+    box-shadow:0 0 6px rgba(249,146,3,0.4);
+}
+
+/* Área da imagem */
+.border.rounded{
+    border:2px dashed #ccc !important;
+    background:#fff;
+    border-radius:12px !important;
+    padding:15px;
+}
+
+/* Botão salvar */
+.btn-primary,
+button[type="submit"]{
+    border:none;
+    border-radius:8px;
+    transition:.3s;
+}
+
+button[type="submit"]{
+    background:#192A6B;
+}
+
+button[type="submit"]:hover{
+    background:#F99203;
+}
+
+/* Botão limpar */
+.btn-outline-secondary{
+    border-radius:8px;
+}
+
+/* Espaçamento geral do formulário */
+form label{
+    font-weight:600;
+    margin-bottom:5px;
+}

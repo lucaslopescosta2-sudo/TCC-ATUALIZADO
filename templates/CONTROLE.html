@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Estoque</title>
+    <link rel="icon" href="static/download.png">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: #f4f4f4;
+        }
+
+        /* 1. TRAVA A ALTURA DA NAVBAR (Não deixa ela engrossar de jeito nenhum) */
+        .navbar {
+            background: #192A6B !important;
+            height: 55px !important; /* Força a barra azul a ter sempre essa altura fina */
+            padding: 0 !important;
+            position: relative;
+        }
+
+        .navbar .container {
+            height: 100%;
+            position: relative; /* Base para o logo se guiar */
+        }
+
+        /* 2. FAZ O LOGO FLUTUAR (Pode aumentar o height à vontade aqui) */
+        #logo_navbar {
+            height: 100px !important;  /* <- AUMENTE OU DIMINUA AQUI O TAMANHO DO LOGO */
+            width: auto !important;
+            display: block !important;
+            
+            position: absolute !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important; /* Centraliza verticalmente na marra */
+            z-index: 9999 !important; /* Garante que fica por cima de tudo */
+        }
+
+        /* Garante que o link do logo não quebre o layout */
+        .brand-container {
+            position: relative;
+            height: 100%;
+            min-width: 160px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Alinha os textos do menu perfeitamente dentro da barra fina */
+        .nav-link {
+            color: white !important;
+            font-weight: 500;
+            line-height: 55px !important; /* Mesma altura da navbar para centralizar o texto */
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
+        .nav-link:hover {
+            color: #F99203 !important;
+        }
+
+        /* Resto do seu estilo do painel e tabela */
+        .titulo {
+            background: #192A6B;
+            color: white;
+            text-align: center;
+            padding: 18px;
+            border-radius: 10px 10px 0 0;
+            font-size: 30px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+        }
+
+        .table img {
+            width: 65px;
+            height: 65px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .badge {
+            font-size: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+        <div class="container">
+            
+            <div class="brand-container">
+                <a class="navbar-brand m-0 p-0" href="/controle">
+                    <img id="logo_navbar" src="/static/SENAI.png" alt="SENAI Logo">
+                </a>
+            </div>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="menu">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/controle">Estoque</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/movimentacao">Movimentação</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/adicionar">Adicionar novos itens</a>
+                    </li>
+                    
+                    {% if permissao_atual == "Administrador" %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/usuarios">Gerenciar usuarios</a>
+                    </li>
+                    {% endif %}
+                    
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4 mb-5">
+        <div class="card shadow">
+            <div class="titulo">
+                CONTROLE DE ESTOQUE - ALMOX
+            </div>
+
+            <div class="card-body p-4">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <input type="text" id="pesquisa" class="form-control" placeholder="Pesquisar produto..." onkeyup="pesquisar()">
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover text-center align-middle m-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Foto</th>
+                                <th>Produto</th>
+                                <th>Categoria</th>
+                                <th>Quantidade</th>
+                                <th>Mínimo</th>
+                                <th>Preço</th>
+                                <th>Descrição</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela">
+                            {% for item in resultado %}
+                            <tr>
+                                <td>{{ item[0] }}</td>
+                                <td>
+                                    <img src="{{ item[7] }}" alt="{{ item[1] }}">
+                                </td>
+                                <td>{{ item[1] }}</td>
+                                <td>{{ item[6] }}</td>
+                                <td>
+                                    {% if item[2] <= item[3] %}
+                                        <span class="badge bg-danger">{{ item[2] }}</span>
+                                    {% else %}
+                                        <span class="badge bg-success">{{ item[2] }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item[3] }}</td>
+                                <td>R$ {{ "%.2f"|format(item[4]) }}</td>
+                                <td>{{ item[5] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function pesquisar() {
+            let input = document.getElementById("pesquisa");
+            let filtro = input.value.toUpperCase();
+            let tabela = document.getElementById("tabela");
+            let linhas = tabela.getElementsByTagName("tr");
+
+            for (let i = 0; i < linhas.length; i++) {
+                let coluna = linhas[i].getElementsByTagName("td")[2];
+                if (coluna) {
+                    let texto = coluna.textContent || coluna.innerText;
+                    if (texto.toUpperCase().indexOf(filtro) > -1) {
+                        linhas[i].style.display = "";
+                    } else {
+                        linhas[i].style.display = "none";
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

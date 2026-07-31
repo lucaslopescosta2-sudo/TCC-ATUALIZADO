@@ -1,0 +1,74 @@
+background: #f4f4f4;
+
+        /* 1. TRAVA A ALTURA DA NAVBAR (Não deixa ela engrossar de jeito nenhum) */
+        .navbar {
+            background: #192A6B !important;
+            height: 55px !important; /* Força a barra azul a ter sempre essa altura fina */
+            padding: 0 !important;
+            position: relative;
+        }
+
+        .navbar .container {
+            height: 100%;
+            position: relative; /* Base para o logo se guiar */
+        }
+
+        /* 2. FAZ O LOGO FLUTUAR (Pode aumentar o height à vontade aqui) */
+        #logo_navbar {
+            height: 65px !important;  /* <- AUMENTE OU DIMINUA AQUI O TAMANHO DO LOGO */
+            width: auto !important;
+            display: block !important;
+            
+            position: absolute !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important; /* Centraliza verticalmente na marra */
+            z-index: 9999 !important; /* Garante que fica por cima de tudo */
+        }
+
+        /* Garante que o link do logo não quebre o layout */
+        .brand-container {
+            position: relative;
+            height: 100%;
+            min-width: 160px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Alinha os textos do menu perfeitamente dentro da barra fina */
+        .nav-link {
+            color: white !important;
+            font-weight: 500;
+            line-height: 55px !important; /* Mesma altura da navbar para centralizar o texto */
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
+        .nav-link:hover {
+            color: #F99203 !important;
+        }
+
+        /* Resto do seu estilo do painel e tabela */
+        .titulo {
+            background: #192A6B;
+            color: white;
+            text-align: center;
+            padding: 18px;
+            border-radius: 10px 10px 0 0;
+            font-size: 30px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+        }
+
+        .table img {
+            width: 65px;
+            height: 65px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .badge {
+            font-size: 15px;
+        }
