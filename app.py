@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, redirect, session
 import mysql.connector
 import bcrypt
 
-
+ 
 app = Flask(__name__)
 
 # Chave necessária para o Flask conseguir usar sessão (guardar quem está logado)
