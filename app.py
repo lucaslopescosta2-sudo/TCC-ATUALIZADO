@@ -34,11 +34,11 @@ def obter_conexao():
 
     return mysql.connector.connect(
 
-        host="localhost",
+        host="db",
 
         user="root",
 
-        password="",
+        password="mysql_root",
 
         database="db_almox",
 
@@ -1079,12 +1079,12 @@ def inicializar_banco():
 
     conexao = mysql.connector.connect(
 
-        host="localhost",
+        host="db",
 
         user="root",
 
-        password="",
-
+        password="mysql_root",
+        database="db_almox",
         port=3306
 
     )
@@ -1201,6 +1201,5 @@ if __name__ == "__main__":
     inicializar_banco()
 
 
-    app.run(
-        debug=True
-    )
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)

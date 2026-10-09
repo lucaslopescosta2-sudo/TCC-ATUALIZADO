@@ -1,20 +1,24 @@
 version: '3.8'
 
 services:
-  # Container do Banco de Dados MySQL
   db:
     image: mysql:8.0
     container_name: mysql_db_almox
     restart: always
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
       MYSQL_DATABASE: db_almox
+      MYSQL_ROOT_PASSWORD: "mysql_root"
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./banco.sql:/docker-entrypoint-initdb.d/banco.sql
 
-  # Container da Aplicação Flask
   web:
     build: .
     container_name: flask_almox
@@ -25,6 +29,9 @@ services:
       - db
     environment:
       - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=mysql_root
+      - DB_NAME=db_almox
 
 volumes:
   mysql_data:

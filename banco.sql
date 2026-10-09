@@ -1,6 +1,7 @@
 -- ==========================================
 -- APAGA E CRIA O BANCO
 -- ==========================================
+SET NAMES 'utf8mb4';
 
 DROP DATABASE IF EXISTS db_almox;
 
