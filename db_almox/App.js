@@ -14,7 +14,7 @@ import QRCode from 'react-native-qrcode-svg';
 export default function App() {
   const [usuario, setUsuario] = useState('');
   const [senha, setSenha] = useState('');
-  const [valorQrCode, setValorQrCode] = useState('http://192.168.1.100:5000'); // IP do servidor Flask / Dados do item
+  const [valorQrCode, setValorQrCode] = useState('http://192.168.1.100:5000'); // Garante que o IP é o da tua máquina no ipconfig
 
   const handleLogin = async () => {
     if (!usuario || !senha) {
@@ -23,21 +23,24 @@ export default function App() {
     }
 
     try {
-      const response = await fetch('http://192.168.1.100:5000/controle', {
+      // 1. Alterado para a nova rota /api/login
+      const response = await fetch('http://192.168.1.100:5000/api/login', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json', // 2. Alterado para JSON
         },
-        body: new URLSearchParams({
+        body: JSON.stringify({
           usuario: usuario,
           senha: senha,
-        }).toString(),
+        }),
       });
 
-      if (response.ok) {
-        Alert.alert('Sucesso', 'Login realizado com sucesso!');
+      const data = await response.json();
+
+      if (response.ok && data.status === 'sucesso') {
+        Alert.alert('Sucesso', `Bem-vindo, ${data.usuario}!`);
       } else {
-        Alert.alert('Erro', 'E-mail ou senha inválidos!');
+        Alert.alert('Erro', data.mensagem || 'E-mail ou senha inválidos!');
       }
     } catch (error) {
       console.error('Erro ao conectar ao servidor:', error);
@@ -49,7 +52,7 @@ export default function App() {
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      {/* Logótipo SENAI via URL (evita erro de arquivo local ausente) */}
+      {/* Logótipo SENAI via URL */}
       <Image
         source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_Logo.png' }}
         style={styles.logo}

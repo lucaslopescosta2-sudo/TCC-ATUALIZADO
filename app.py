@@ -1,10 +1,12 @@
 import os
-from flask import Flask, render_template, request, redirect, session
+import time
+from flask import Flask, render_template, request, redirect, session, jsonify
+from flask_cors import CORS
 import mysql.connector
 import bcrypt
 
- 
 app = Flask(__name__)
+CORS(app)  # Libera acesso para o Expo / React Native
 
 # Chave necessária para o Flask conseguir usar sessão (guardar quem está logado)
 app.secret_key = "chave_secreta_tcc_almoxarifado"
@@ -197,6 +199,52 @@ def CONTROLE():
         resultado=produtos
 
     )
+
+# ==============================
+# API PARA O APP MOBILE (EXPO)
+# ==============================
+
+@app.route('/api/login', methods=['POST'])
+def API_LOGIN():
+    # Suporta dados enviados tanto via Form quanto via JSON
+    usuario = request.form.get("usuario") or (request.json.get("usuario") if request.is_json else None)
+    senha = request.form.get("senha") or (request.json.get("senha") if request.is_json else None)
+
+    if not usuario or not senha:
+        return jsonify({"status": "erro", "mensagem": "Usuário e senha são obrigatórios."}), 400
+
+    conexao = obter_conexao()
+    cursor = conexao.cursor(buffered=True)
+
+    cursor.execute(
+        """
+        SELECT usuario, senha, permissao
+        FROM usuarios
+        WHERE usuario=%s
+        """,
+        (usuario,)
+    )
+
+    resultado = cursor.fetchone()
+    cursor.close()
+    conexao.close()
+
+    if resultado is None:
+        return jsonify({"status": "erro", "mensagem": "Usuário ou senha inválidos."}), 401
+
+    senha_correta = bcrypt.checkpw(
+        senha.encode("utf-8"),
+        resultado[1].encode("utf-8")
+    )
+
+    if not senha_correta:
+        return jsonify({"status": "erro", "mensagem": "Usuário ou senha inválidos."}), 401
+
+    return jsonify({
+        "status": "sucesso",
+        "usuario": resultado[0],
+        "permissao": resultado[2]
+    }), 200
 
 # ==============================
 # ESTOQUE
@@ -1076,129 +1124,84 @@ def EDITAR_USUARIO(id):
 
 
 def inicializar_banco():
+    conexao = None
+    tentativas = 10
+    
+    # Tenta conectar ao MySQL aguardando o container subir completamente
+    while tentativas > 0:
+        try:
+            conexao = mysql.connector.connect(
+                host="db",
+                user="root",
+                password="mysql_root",
+                database="db_almox",
+                port=3306
+            )
+            print("Conectado ao MySQL com sucesso!")
+            break
+        except Exception as e:
+            print(f"Aguardando o MySQL inicializar... Tentativas restantes: {tentativas}")
+            tentativas -= 1
+            time.sleep(3)
 
-    conexao = mysql.connector.connect(
-
-        host="db",
-
-        user="root",
-
-        password="mysql_root",
-        database="db_almox",
-        port=3306
-
-    )
-
+    if not conexao:
+        print("Não foi possível conectar ao banco de dados.")
+        return
 
     cursor = conexao.cursor()
 
-
     cursor.execute(
-
         """
         CREATE DATABASE IF NOT EXISTS db_almox
         CHARACTER SET utf8mb4
         COLLATE utf8mb4_unicode_ci
         """
-
     )
-
 
     cursor.execute("USE db_almox")
 
-
     cursor.execute(
-
         """
         CREATE TABLE IF NOT EXISTS usuarios (
-
             id INT AUTO_INCREMENT PRIMARY KEY,
-
             usuario VARCHAR(100) NOT NULL UNIQUE,
-
             senha VARCHAR(255) NOT NULL,
-
-            permissao ENUM('Administrador','Funcionário')
-            DEFAULT 'Funcionário'
-
+            permissao ENUM('Administrador','Funcionário') DEFAULT 'Funcionário'
         )
         """
-
     )
 
-
     cursor.execute(
-
         """
         CREATE TABLE IF NOT EXISTS estoque (
-
             id INT AUTO_INCREMENT PRIMARY KEY,
-
             nome VARCHAR(100) NOT NULL,
-
             quantidade_disponivel INT NOT NULL DEFAULT 0,
-
             quantidade_minima INT NOT NULL DEFAULT 0,
-
             preco DECIMAL(10,2) NOT NULL,
-
             descricao VARCHAR(255),
-
             categoria VARCHAR(100),
-
             imagem VARCHAR(255)
-
         )
         """
-
     )
-
 
     cursor.execute(
-
         """
         CREATE TABLE IF NOT EXISTS historico (
-
             id INT AUTO_INCREMENT PRIMARY KEY,
-
             nome_produto VARCHAR(100) NOT NULL,
-
             tipo ENUM('Entrada','Saida') NOT NULL,
-
             quantidade INT NOT NULL,
-
             usuario VARCHAR(100) NOT NULL,
-
             data_registro DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-
         )
         """
-
     )
 
-
     conexao.commit()
-
     cursor.close()
-
     conexao.close()
-
-
-
-# ==============================
-# EXECUTAR SISTEMA
-# ==============================
-
-#EDITAR PAGINA ======================#
-
-@app.route('/')
-def home():
-    return 'Olá, bem-vindo à minha página inicial!'
-
-if __name__ == "__main__":
-
-
-    inicializar_banco()
 
 
 if __name__ == '__main__':
