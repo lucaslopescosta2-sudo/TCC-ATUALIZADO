@@ -172,6 +172,201 @@ def API_LOGIN():
         "permissao": resultado[2],
     }), 200
 
+# ==============================
+# API DE ESTOQUE PARA O APP MOBILE
+# ==============================
+
+@app.route("/api/estoque", methods=["GET"])
+def API_ESTOQUE():
+    conexao = obter_conexao()
+    cursor = conexao.cursor(buffered=True)
+
+    try:
+        cursor.execute("SELECT id, nome, quantidade_disponivel, quantidade_minima, preco, descricao, categoria, imagem FROM estoque")
+        produtos = cursor.fetchall()
+
+        lista_produtos = []
+        for p in produtos:
+            lista_produtos.append({
+                "id": p[0],
+                "nome": p[1],
+                "quantidade_disponivel": p[2],
+                "quantidade_minima": p[3],
+                "preco": float(p[4]) if p[4] is not None else 0.0,
+                "descricao": p[5],
+                "categoria": p[6],
+                "imagem": p[7]
+            })
+
+        return jsonify({
+            "status": "sucesso",
+            "produtos": lista_produtos
+        }), 200
+
+    except Exception as erro:
+        app.logger.exception("Erro ao buscar estoque para API.")
+        return jsonify({"status": "erro", "mensagem": "Erro ao buscar produtos."}), 500
+
+    finally:
+        cursor.close()
+        conexao.close()
+
+
+# ==============================
+# API DE ADICIONAR PRODUTO PARA O APP
+# ==============================
+
+@app.route("/api/adicionar", methods=["POST"])
+def API_ADICIONAR():
+    dados = request.get_json(silent=True) or {}
+
+    nome = request.form.get("produto") or dados.get("nome")
+    categoria = request.form.get("categoria") or dados.get("categoria")
+    quantidade = request.form.get("quantidade") or dados.get("quantidade")
+    quantidade_minima = request.form.get("minimo") or dados.get("quantidade_minima")
+    preco = request.form.get("preco") or dados.get("preco")
+    descricao = request.form.get("descricao") or dados.get("descricao")
+    imagem = dados.get("imagem", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1lD3czkr0cNGlMHlhaDziIT-ITO4Nm79glIl185Ew&s=10")
+
+    if not nome or quantidade is None:
+        return jsonify({"status": "erro", "mensagem": "Nome e quantidade são obrigatórios."}), 400
+
+    if preco:
+        if isinstance(preco, str):
+            preco = preco.replace(",", ".")
+
+    conexao = obter_conexao()
+    cursor = conexao.cursor(buffered=True)
+
+    try:
+        cursor.execute(
+            """
+            INSERT INTO estoque (
+                nome,
+                quantidade_disponivel,
+                quantidade_minima,
+                preco,
+                descricao,
+                categoria,
+                imagem
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                nome,
+                quantidade,
+                quantidade_minima or 0,
+                preco or 0.0,
+                descricao,
+                categoria,
+                imagem,
+            ),
+        )
+        conexao.commit()
+        return jsonify({"status": "sucesso", "mensagem": "Produto adicionado com sucesso!"}), 201
+
+    except Exception:
+        conexao.rollback()
+        app.logger.exception("Erro ao adicionar produto via API.")
+        return jsonify({"status": "erro", "mensagem": "Erro interno ao adicionar produto."}), 500
+
+    finally:
+        cursor.close()
+        conexao.close()
+
+
+# ==============================
+# API DE MOVIMENTAÇÃO PARA O APP
+# ==============================
+
+@app.route("/api/movimentacao", methods=["POST"])
+def API_MOVIMENTACAO():
+    dados = request.get_json(silent=True) or {}
+
+    id_produto = dados.get("id_produto") or dados.get("produto")
+    tipo = dados.get("tipo")
+    quantidade = dados.get("quantidade")
+    usuario = dados.get("usuario", "Aplicativo")
+
+    if not id_produto or not tipo or quantidade is None:
+        return jsonify({"status": "erro", "mensagem": "ID do produto, tipo e quantidade são obrigatórios."}), 400
+
+    try:
+        quantidade = int(quantidade)
+    except (TypeError, ValueError):
+        return jsonify({"status": "erro", "mensagem": "Quantidade inválida."}), 400
+
+    if tipo not in ("Entrada", "Saida"):
+        return jsonify({"status": "erro", "mensagem": "Tipo de movimentação inválido."}), 400
+
+    if quantidade <= 0:
+        return jsonify({"status": "erro", "mensagem": "A quantidade deve ser maior que zero."}), 400
+
+    conexao = obter_conexao()
+    cursor = conexao.cursor(buffered=True)
+
+    try:
+        cursor.execute(
+            """
+            SELECT nome, quantidade_disponivel
+            FROM estoque
+            WHERE id = %s
+            FOR UPDATE
+            """,
+            (id_produto,),
+        )
+        produto = cursor.fetchone()
+
+        if produto is None:
+            return jsonify({"status": "erro", "mensagem": "Produto não encontrado."}), 404
+
+        nome_produto = produto[0]
+        estoque_atual = produto[1]
+
+        if tipo == "Entrada":
+            novo_estoque = estoque_atual + quantidade
+        else:
+            if quantidade > estoque_atual:
+                return jsonify({
+                    "status": "erro",
+                    "mensagem": f"Estoque insuficiente. Disponível: {estoque_atual}"
+                }), 400
+            novo_estoque = estoque_atual - quantidade
+
+        cursor.execute(
+            """
+            UPDATE estoque
+            SET quantidade_disponivel = %s
+            WHERE id = %s
+            """,
+            (novo_estoque, id_produto),
+        )
+
+        cursor.execute(
+            """
+            INSERT INTO historico (
+                nome_produto,
+                tipo,
+                quantidade,
+                usuario,
+                data_registro
+            )
+            VALUES (%s, %s, %s, %s, NOW())
+            """,
+            (nome_produto, tipo, quantidade, usuario),
+        )
+
+        conexao.commit()
+        return jsonify({"status": "sucesso", "mensagem": "Movimentação registrada com sucesso!"}), 200
+
+    except Exception:
+        conexao.rollback()
+        app.logger.exception("Erro ao salvar movimentação via API.")
+        return jsonify({"status": "erro", "mensagem": "Erro interno ao processar movimentação."}), 500
+
+    finally:
+        cursor.close()
+        conexao.close()
 
 # ==============================
 # ESTOQUE
