@@ -10,19 +10,59 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState('');
+export default function LoginScreen({ navigation }) {
+  const [usuario, setUsuario] = useState('');
   const [senha, setSenha] = useState('');
+  const [carregando, setCarregando] = useState(false);
+
+  const handleLogin = async () => {
+    if (!usuario || !senha) {
+      Alert.alert('Atenção', 'Usuário e senha são obrigatórios.');
+      return;
+    }
+
+    setCarregando(true);
+
+    try {
+      // Se estiver a testar num telemóvel físico via Expo Go,
+      // substitua "localhost" pelo IP da sua máquina (ex: "http://192.168.1.15:5000/api/login")
+      const resposta = await fetch('http://192.168.56.1:5000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          usuario: usuario,
+          senha: senha,
+        }),
+      });
+
+      const dados = await resposta.json();
+
+      if (resposta.ok && dados.status === 'sucesso') {
+        // Redireciona para a tela de Estoque se o login for válido
+        navigation?.replace('Estoque');
+      } else {
+        Alert.alert('Erro', dados.mensagem || 'Usuário ou senha inválidos.');
+      }
+    } catch (erro) {
+      console.error(erro);
+      Alert.alert('Erro de Conexão', 'Não foi possível conectar ao servidor Flask.');
+    } finally {
+      setCarregando(false);
+    }
+  };
 
   return (
     <ImageBackground
-      source={require('./assets/Design sem nome.jpg')} // certifique-se de que a imagem esteja na pasta assets
+      source={require('./assets/Design sem nome.jpg')}
       style={styles.backgroundImage}
       resizeMode="cover"
     >
-      {/* Camada para dar o efeito de opacidade/overlay que você tinha no pseudo-elemento ::before */}
       <View style={styles.overlay} />
 
       <KeyboardAvoidingView
@@ -33,28 +73,25 @@ export default function LoginScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Logo / Fotinho centralizada */}
           <View style={styles.logoContainer}>
             <Image
-              source={require('./assets/fotinho.png')} // Substitua pelo caminho correto da sua logo
+              source={require('./assets/fotinho.png')}
               style={styles.fotinho}
               resizeMode="contain"
             />
           </View>
 
-          {/* Cartão de Login */}
           <View style={styles.card}>
             <Text style={styles.title}>Login</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>E-mail</Text>
+              <Text style={styles.label}>Usuário</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Digite seu e-mail"
+                placeholder="Digite seu usuário"
                 placeholderTextColor="#A0A0A0"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
+                value={usuario}
+                onChangeText={setUsuario}
                 autoCapitalize="none"
               />
             </View>
@@ -71,8 +108,17 @@ export default function LoginScreen() {
               />
             </View>
 
-            <TouchableOpacity style={styles.button} activeOpacity={0.8}>
-              <Text style={styles.buttonText}>Entrar</Text>
+            <TouchableOpacity
+              style={styles.button}
+              activeOpacity={0.8}
+              onPress={handleLogin}
+              disabled={carregando}
+            >
+              {carregando ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Entrar</Text>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -84,11 +130,11 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
-    backgroundColor: '#0046B5', // Cor de fundo original
+    backgroundColor: '#0046B5',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 70, 181, 0.4)', // Ajuste a opacidade para casar com o seu ::before
+    backgroundColor: 'rgba(0, 70, 181, 0.4)',
   },
   container: {
     flex: 1,
@@ -118,7 +164,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
-    elevation: 8, // Sombra para Android
+    elevation: 8,
   },
   title: {
     fontSize: 24,

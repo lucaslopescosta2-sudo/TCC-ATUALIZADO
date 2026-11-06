@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,49 +13,74 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 
-const historicoInicial = [
-  {
-    id: '1',
-    produto: 'Item Exemplo 1',
-    tipo: 'Entrada',
-    quantidade: 20,
-    data: '22/10/2026',
-  },
-  {
-    id: '2',
-    produto: 'Item Exemplo 2',
-    tipo: 'Saída',
-    quantidade: 5,
-    data: '21/10/2026',
-  },
-];
-
 export default function MovimentacaoScreen({ navigation }) {
-  const [movimentacoes, setMovimentacoes] = useState(historicoInicial);
+  const [movimentacoes, setMovimentacoes] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [carregando, setCarregando] = useState(true);
+  const [salvando, setSalvando] = useState(false);
 
   // Form State
-  const [produto, setProduto] = useState('');
+  const [produtoId, setProdutoId] = useState(''); // O ideal é enviar o ID do produto
   const [tipo, setTipo] = useState('Entrada');
   const [quantidade, setQuantidade] = useState('');
 
-  const handleSalvarMovimentacao = () => {
-    if (!produto || !quantidade) return;
+  // Função para buscar o histórico da API
+  const carregarHistorico = async () => {
+    try {
+      setCarregando(true);
+      // ATENÇÃO: Se estiver a testar num telemóvel físico, substitua "localhost" pelo IP da sua máquina
+      const resposta = await fetch('http://192.168.56.1:5000/movimentacao'); // Ou crie uma rota /api/historico se preferir JSON puro
+      // Como a rota /movimentacao original retorna HTML, vamos usar a nossa rota de API ou endpoint dedicado.
+      // Para o Expo, o ideal é consumir dados em JSON. Vamos ajustar para buscar da API de estoque/histórico.
+    } catch (erro) {
+      console.error(erro);
+    } finally {
+      setCarregando(false);
+    }
+  };
 
-    const novaMovimentacao = {
-      id: Date.now().toString(),
-      produto,
-      tipo,
-      quantidade: parseInt(quantidade, 10),
-      data: new Date().toLocaleDateString('pt-BR'),
-    };
+  const handleSalvarMovimentacao = async () => {
+    if (!produtoId || !quantidade) {
+      Alert.alert('Atenção', 'Informe o ID do produto e a quantidade.');
+      return;
+    }
 
-    setMovimentacoes([novaMovimentacao, ...movimentacoes]);
-    setProduto('');
-    setQuantidade('');
-    setModalVisible(false);
+    setSalvando(true);
+
+    try {
+      const resposta = await fetch('http://localhost:5000/api/movimentacao', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id_produto: produtoId,
+          tipo: tipo,
+          quantidade: parseInt(quantidade, 10),
+          usuario: 'Aplicativo',
+        }),
+      });
+
+      const resultado = await resposta.json();
+
+      if (resposta.ok && resultado.status === 'sucesso') {
+        Alert.alert('Sucesso', 'Movimentação registrada com sucesso!');
+        setProdutoId('');
+        setQuantidade('');
+        setModalVisible(false);
+      } else {
+        Alert.alert('Erro', resultado.mensagem || 'Não foi possível registrar a movimentação.');
+      }
+    } catch (erro) {
+      console.error(erro);
+      Alert.alert('Erro de Conexão', 'Não foi possível conectar ao servidor Flask.');
+    } finally {
+      setSalvando(false);
+    }
   };
 
   const renderItem = ({ item }) => {
@@ -64,8 +89,8 @@ export default function MovimentacaoScreen({ navigation }) {
     return (
       <View style={styles.cardItem}>
         <View style={styles.cardInfo}>
-          <Text style={styles.productName}>{item.produto}</Text>
-          <Text style={styles.dateText}>Data: {item.data}</Text>
+          <Text style={styles.productName}>{item.produto || item.nome_produto}</Text>
+          <Text style={styles.dateText}>Data: {item.data || item.data_registro}</Text>
         </View>
 
         <View style={styles.cardActions}>
@@ -112,7 +137,6 @@ export default function MovimentacaoScreen({ navigation }) {
       </View>
 
       <View style={styles.content}>
-        {/* TÍTULO & BOTÃO DE NOVA MOVIMENTAÇÃO */}
         <View style={styles.headerSection}>
           <Text style={styles.h2}>Movimentações</Text>
           <TouchableOpacity
@@ -124,13 +148,15 @@ export default function MovimentacaoScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* LISTA DE HISTÓRICO (Substitui a Tabela HTML) */}
         <FlatList
           data={movimentacoes}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => (item.id ? item.id.toString() : Math.random().toString())}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>Nenhuma movimentação recente registrada.</Text>
+          }
         />
       </View>
 
@@ -146,7 +172,6 @@ export default function MovimentacaoScreen({ navigation }) {
           style={styles.modalOverlay}
         >
           <View style={styles.modalContent}>
-            {/* Modal Header */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Registrar Movimentação</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
@@ -154,15 +179,15 @@ export default function MovimentacaoScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            {/* Modal Body */}
             <ScrollView style={styles.modalBody}>
-              <Text style={styles.label}>Produto</Text>
+              <Text style={styles.label}>ID do Produto</Text>
               <TextInput
                 style={styles.formControl}
-                placeholder="Nome do produto"
+                placeholder="Ex: 1"
                 placeholderTextColor="#888"
-                value={produto}
-                onChangeText={setProduto}
+                keyboardType="numeric"
+                value={produtoId}
+                onChangeText={setProdutoId}
               />
 
               <Text style={styles.label}>Tipo de Movimentação</Text>
@@ -187,14 +212,14 @@ export default function MovimentacaoScreen({ navigation }) {
                 <TouchableOpacity
                   style={[
                     styles.typeButton,
-                    tipo === 'Saída' && styles.typeButtonActiveSaida,
+                    tipo === 'Saida' && styles.typeButtonActiveSaida,
                   ]}
-                  onPress={() => setTipo('Saída')}
+                  onPress={() => setTipo('Saida')}
                 >
                   <Text
                     style={[
                       styles.typeButtonText,
-                      tipo === 'Saída' && styles.typeButtonTextActive,
+                      tipo === 'Saida' && styles.typeButtonTextActive,
                     ]}
                   >
                     Saída
@@ -212,13 +237,17 @@ export default function MovimentacaoScreen({ navigation }) {
                 onChangeText={setQuantidade}
               />
 
-              {/* Botão Salvar */}
               <TouchableOpacity
                 style={styles.btnPrimary}
                 activeOpacity={0.8}
                 onPress={handleSalvarMovimentacao}
+                disabled={salvando}
               >
-                <Text style={styles.btnPrimaryText}>Salvar Registro</Text>
+                {salvando ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.btnPrimaryText}>Salvar Registro</Text>
+                )}
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -233,8 +262,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f4f4f4',
   },
-
-  /* NAVBAR */
   navbar: {
     backgroundColor: '#192A6B',
     height: 55,
@@ -276,8 +303,6 @@ const styles = StyleSheet.create({
     color: '#F99203',
     fontWeight: 'bold',
   },
-
-  /* CONTEÚDO */
   content: {
     flex: 1,
     padding: 16,
@@ -293,8 +318,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
   },
-
-  /* BOTÕES */
   btnWarning: {
     backgroundColor: '#F99203',
     paddingVertical: 10,
@@ -319,8 +342,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-
-  /* CARDS / LISTA */
   listContent: {
     paddingBottom: 20,
   },
@@ -332,7 +353,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    // Sombra equivalente ao CSS box-shadow: 0px 3px 10px rgba(0,0,0,0.1)
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
@@ -371,8 +391,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
-
-  /* MODAL ESTILOS */
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -448,5 +466,11 @@ const styles = StyleSheet.create({
   },
   typeButtonTextActive: {
     color: '#FFFFFF',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 30,
+    fontSize: 15,
   },
 });

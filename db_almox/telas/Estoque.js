@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,65 +9,73 @@ import {
   SafeAreaView,
   StatusBar,
   TextInput,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 
-// Exemplo de dados de produtos no estoque
-const dadosEstoqueInicial = [
-  {
-    id: '1',
-    nome: 'Item Exemplo 1',
-    codigo: 'COD-001',
-    quantidade: 45,
-    imagem: 'https://via.placeholder.com/65',
-    status: 'Em Estoque',
-  },
-  {
-    id: '2',
-    nome: 'Item Exemplo 2',
-    codigo: 'COD-002',
-    quantidade: 5,
-    imagem: 'https://via.placeholder.com/65',
-    status: 'Baixo Estoque',
-  },
-  {
-    id: '3',
-    nome: 'Item Exemplo 3',
-    codigo: 'COD-003',
-    quantidade: 0,
-    imagem: 'https://via.placeholder.com/65',
-    status: 'Esgotado',
-  },
-];
-
 export default function EstoqueScreen({ navigation }) {
-  const [produtos, setProdutos] = useState(dadosEstoqueInicial);
+  const [produtos, setProdutos] = useState([]);
   const [busca, setBusca] = useState('');
+  const [carregando, setCarregando] = useState(true);
 
-  // Filtro de pesquisa rápida
+  // Função para buscar os produtos na API do Flask
+  const carregarEstoque = async () => {
+    try {
+      setCarregando(true);
+      // ATENÇÃO: Se estiver a testar num telemóvel físico via Expo Go, 
+      // substitua "localhost" pelo IP da sua máquina (ex: "http://192.168.1.15:5000/api/estoque")
+      const resposta = await fetch('http://192.168.56.1:5000/api/estoque');
+      const dados = await resposta.json();
+
+      if (resposta.ok && dados.status === 'sucesso') {
+        setProdutos(dados.produtos);
+      } else {
+        Alert.alert('Erro', 'Não foi possível carregar os produtos do estoque.');
+      }
+    } catch (erro) {
+      console.error(erro);
+      Alert.alert('Erro de Conexão', 'Não foi possível conectar ao servidor Flask.');
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  // Carrega o estoque sempre que a tela for aberta ou focada
+  useEffect(() => {
+    carregarEstoque();
+  }, []);
+
+  // Filtro de pesquisa rápida por nome ou categoria
   const produtosFiltrados = produtos.filter(item =>
     item.nome.toLowerCase().includes(busca.toLowerCase()) ||
-    item.codigo.toLowerCase().includes(busca.toLowerCase())
+    (item.categoria && item.categoria.toLowerCase().includes(busca.toLowerCase()))
   );
 
   const renderItem = ({ item }) => {
-    // Definir cor da badge baseada no status/quantidade
+    // Definir cor da badge baseada na quantidade disponível
     let badgeBg = '#28a745'; // Verde
-    if (item.quantidade <= 0) badgeBg = '#dc3545'; // Vermelho
-    else if (item.quantidade <= 10) badgeBg = '#ffc107'; // Amarelo
+    if (item.quantidade_disponivel <= 0) badgeBg = '#dc3545'; // Vermelho
+    else if (item.quantidade_disponivel <= (item.quantidade_minima || 2)) badgeBg = '#ffc107'; // Amarelo
+
+    // Tratamento da imagem (se vier URL padrão ou vazia)
+    const imagemUri = item.imagem && item.imagem.startsWith('http') 
+      ? item.imagem 
+      : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1lD3czkr0cNGlMHlhaDziIT-ITO4Nm79glIl185Ew&s=10';
 
     return (
       <View style={styles.cardItem}>
         <Image
-          source={{ uri: item.imagem }}
+          source={{ uri: imagemUri }}
           style={styles.productImage}
           resizeMode="cover"
         />
         <View style={styles.productDetails}>
           <Text style={styles.productName}>{item.nome}</Text>
-          <Text style={styles.productCode}>Cód: {item.codigo}</Text>
+          <Text style={styles.productCode}>Categoria: {item.categoria || 'Geral'}</Text>
+          <Text style={styles.productPrice}>R$ {Number(item.preco).toFixed(2)}</Text>
           <View style={styles.badgeContainer}>
             <View style={[styles.badge, { backgroundColor: badgeBg }]}>
-              <Text style={styles.badgeText}>{item.quantidade} un.</Text>
+              <Text style={styles.badgeText}>{item.quantidade_disponivel} un.</Text>
             </View>
           </View>
         </View>
@@ -79,22 +87,22 @@ export default function EstoqueScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#192A6B" />
 
-      {/* 1. NAVBAR FIXA COM LOGO SOBRESSALENTE */}
+      {/* 1. NAVBAR FIXA COM LOGO */}
       <View style={styles.navbar}>
         <View style={styles.navContainer}>
           <TouchableOpacity
             style={styles.brandContainer}
             activeOpacity={0.8}
-            onPress={() => {}}
+            onPress={() => carregarEstoque()}
           >
             <Image
-              source={require('./assets/logo.png')} // Substitua pela sua logo em assets
+              source={require('./assets/logo.png')}
               style={styles.logoNavbar}
               resizeMode="contain"
             />
           </TouchableOpacity>
 
-          {/* Atalhos do Menu (Estoque / Movimentação) */}
+          {/* Atalhos do Menu */}
           <View style={styles.menuLinks}>
             <TouchableOpacity onPress={() => {}}>
               <Text style={[styles.navLink, styles.navLinkActive]}>Estoque</Text>
@@ -108,30 +116,37 @@ export default function EstoqueScreen({ navigation }) {
 
       {/* Conteúdo Principal */}
       <View style={styles.content}>
-        {/* Card Header com Título */}
         <View style={styles.cardHeader}>
           <Text style={styles.titulo}>Controle de Estoque</Text>
         </View>
 
-        {/* Input de Busca */}
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar por nome ou código..."
+            placeholder="Buscar por nome ou categoria..."
             placeholderTextColor="#888"
             value={busca}
             onChangeText={setBusca}
           />
         </View>
 
-        {/* Lista de Produtos (Substitui a Tabela HTML) */}
-        <FlatList
-          data={produtosFiltrados}
-          keyExtractor={item => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
+        {carregando ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#192A6B" />
+            <Text style={styles.loadingText}>A carregar estoque...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={produtosFiltrados}
+            keyExtractor={item => item.id.toString()}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>Nenhum produto encontrado no estoque.</Text>
+            }
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -142,8 +157,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f4f4f4',
   },
-
-  /* 1. NAVBAR */
   navbar: {
     backgroundColor: '#192A6B',
     height: 55,
@@ -165,12 +178,11 @@ const styles = StyleSheet.create({
     minWidth: 100,
     justifyContent: 'center',
   },
-  /* 2. LOGO FLUTUANTE (Supera a altura da navbar de 55px) */
   logoNavbar: {
     height: 65,
     width: 90,
     position: 'absolute',
-    top: -5, // Faz a logo flutuar levemente para fora
+    top: -5,
   },
   menuLinks: {
     flexDirection: 'row',
@@ -183,11 +195,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   navLinkActive: {
-    color: '#F99203', // Cor destaque ao passar o mouse/selecionado
+    color: '#F99203',
     fontWeight: 'bold',
   },
-
-  /* CONTEÚDO E CARD DE ESTOQUE */
   content: {
     flex: 1,
     padding: 16,
@@ -219,8 +229,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
-
-  /* LISTA DE ITENS */
   listContent: {
     paddingTop: 10,
     paddingBottom: 20,
@@ -236,7 +244,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3, // Sombra Android
+    elevation: 3,
   },
   productImage: {
     width: 65,
@@ -257,6 +265,12 @@ const styles = StyleSheet.create({
   productCode: {
     fontSize: 13,
     color: '#666',
+    marginBottom: 2,
+  },
+  productPrice: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#28a745',
     marginBottom: 6,
   },
   badgeContainer: {
@@ -271,5 +285,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#666',
+    fontSize: 14,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 30,
+    fontSize: 15,
   },
 });
